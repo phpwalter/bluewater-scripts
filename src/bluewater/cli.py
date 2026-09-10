@@ -7,7 +7,8 @@ from bluewater import __version__
 from bluewater.config import BluewaterConfig, ConfigurationError, load_config
 from bluewater.hooks import install as install_hooks
 from bluewater.initialization import initialize
-from bluewater.locale_guard import LocaleGuardError, run as run_locale_guard
+from bluewater.locale_guard import LocaleGuardError
+from bluewater.locale_guard import run as run_locale_guard
 from bluewater.repository import Repository, find_root, inspect_repository
 from bluewater.validation import CheckResult, run_checks
 

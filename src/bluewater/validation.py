@@ -7,7 +7,8 @@ from dataclasses import dataclass
 import yaml
 
 from bluewater.config import BluewaterConfig
-from bluewater.locale_guard import LocaleGuardError, run as run_locale_guard
+from bluewater.locale_guard import LocaleGuardError
+from bluewater.locale_guard import run as run_locale_guard
 from bluewater.repository import Repository
 from bluewater.versioning import satisfies
 

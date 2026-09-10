@@ -4,7 +4,6 @@ from pathlib import Path
 
 from bluewater.repository import detect_profile
 
-
 CONFIG_TEMPLATE = """version: 1
 
 repository:

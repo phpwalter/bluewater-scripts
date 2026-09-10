@@ -4,7 +4,6 @@ import os
 from importlib.resources import as_file, files
 from pathlib import Path
 
-
 HOOKS = ("pre-commit", "pre-push", "post-checkout", "post-merge")
 
 
