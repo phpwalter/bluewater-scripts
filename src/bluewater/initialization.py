@@ -8,7 +8,7 @@ CONFIG_TEMPLATE = """version: 1
 
 repository:
   type: {profile}
-  required_bluewater_version: \">=1.0,<2.0\"
+  required_bluewater_version: \">=1.0.0.dev0,<2.0\"
 
 checks:
   structured_files: true

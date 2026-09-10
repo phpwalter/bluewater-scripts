@@ -5,9 +5,8 @@ Development targets the `foundation` branch until the 1.0 foundation is accepted
 ## Setup
 
 ```bash
-git clone --recurse-submodules https://github.com/phpwalter/bluewater-scripts.git
+git clone --branch foundation --recurse-submodules https://github.com/phpwalter/bluewater-scripts.git
 cd bluewater-scripts
-git checkout foundation
 python -m venv .venv
 python -m pip install -e ".[dev]"
 bluewater hooks install

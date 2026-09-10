@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from dataclasses import dataclass
 
 import yaml
@@ -66,7 +67,7 @@ def check_python_syntax(repo: Repository, config: BluewaterConfig) -> CheckResul
     if repo.profile not in {"python", "mixed"} or not _enabled(config, "python_syntax"):
         return CheckResult("python-syntax", True, "not applicable or disabled")
     proc = subprocess.run(
-        ["python", "-m", "compileall", "-q", "src", "tests"],
+        [sys.executable, "-m", "compileall", "-q", "src", "tests"],
         cwd=repo.root,
         capture_output=True,
         text=True,
