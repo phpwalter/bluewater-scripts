@@ -1,0 +1,64 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+import yaml
+from jsonschema import Draft202012Validator
+
+
+class ConfigurationError(ValueError):
+    """Raised when bluewater.yml is missing or invalid."""
+
+
+@dataclass(frozen=True)
+class LocaleGuardConfig:
+    enabled: bool = True
+    path: str = "tools/locale-guard"
+    config: str = ".locale-guard.yml"
+
+
+@dataclass(frozen=True)
+class BluewaterConfig:
+    version: int
+    repository_type: str = "auto"
+    required_version: str | None = None
+    locale_guard: LocaleGuardConfig = field(default_factory=LocaleGuardConfig)
+    checks: dict[str, bool] = field(default_factory=dict)
+
+
+def _schema_path() -> Path:
+    return Path(__file__).resolve().parents[2] / "schemas" / "bluewater.schema.json"
+
+
+def load_config(root: Path) -> BluewaterConfig:
+    path = root / "bluewater.yml"
+    if not path.is_file():
+        raise ConfigurationError(f"required configuration not found: {path}")
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ConfigurationError("bluewater.yml must contain a YAML mapping")
+
+    import json
+
+    schema = json.loads(_schema_path().read_text(encoding="utf-8"))
+    errors = sorted(Draft202012Validator(schema).iter_errors(data), key=lambda e: list(e.path))
+    if errors:
+        details = "; ".join(error.message for error in errors)
+        raise ConfigurationError(f"invalid bluewater.yml: {details}")
+
+    repo = data.get("repository", {})
+    integrations = data.get("integrations", {})
+    lg = integrations.get("locale_guard", {})
+    return BluewaterConfig(
+        version=int(data["version"]),
+        repository_type=str(repo.get("type", "auto")),
+        required_version=repo.get("required_bluewater_version"),
+        locale_guard=LocaleGuardConfig(
+            enabled=bool(lg.get("enabled", True)),
+            path=str(lg.get("path", "tools/locale-guard")),
+            config=str(lg.get("config", ".locale-guard.yml")),
+        ),
+        checks={str(k): bool(v) for k, v in data.get("checks", {}).items()},
+    )
