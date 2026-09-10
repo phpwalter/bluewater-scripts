@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import yaml
 from jsonschema import Draft202012Validator
@@ -40,8 +40,6 @@ def load_config(root: Path) -> BluewaterConfig:
     if not isinstance(data, dict):
         raise ConfigurationError("bluewater.yml must contain a YAML mapping")
 
-    import json
-
     schema = json.loads(_schema_path().read_text(encoding="utf-8"))
     errors = sorted(Draft202012Validator(schema).iter_errors(data), key=lambda e: list(e.path))
     if errors:
@@ -50,15 +48,15 @@ def load_config(root: Path) -> BluewaterConfig:
 
     repo = data.get("repository", {})
     integrations = data.get("integrations", {})
-    lg = integrations.get("locale_guard", {})
+    locale_guard = integrations.get("locale_guard", {})
     return BluewaterConfig(
         version=int(data["version"]),
         repository_type=str(repo.get("type", "auto")),
         required_version=repo.get("required_bluewater_version"),
         locale_guard=LocaleGuardConfig(
-            enabled=bool(lg.get("enabled", True)),
-            path=str(lg.get("path", "tools/locale-guard")),
-            config=str(lg.get("config", ".locale-guard.yml")),
+            enabled=bool(locale_guard.get("enabled", True)),
+            path=str(locale_guard.get("path", "tools/locale-guard")),
+            config=str(locale_guard.get("config", ".locale-guard.yml")),
         ),
-        checks={str(k): bool(v) for k, v in data.get("checks", {}).items()},
+        checks={str(key): bool(value) for key, value in data.get("checks", {}).items()},
     )
