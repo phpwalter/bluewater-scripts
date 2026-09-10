@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [{name = "Walter Torres"}]
-dependencies = ["PyYAML>=6.0.2", "jsonschema>=4.23"]
+dependencies = ["PyYAML>=6.0.2", "jsonschema>=4.23", "packaging>=24.2"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.3", "pytest-cov>=6.0", "ruff>=0.8", "mypy>=1.13", "types-PyYAML>=6.0"]
@@ -20,6 +20,9 @@ bluewater = "bluewater.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+bluewater = ["bluewater.schema.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

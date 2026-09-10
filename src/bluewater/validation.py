@@ -10,6 +10,7 @@ import yaml
 from bluewater.config import BluewaterConfig
 from bluewater.locale_guard import LocaleGuardError, run as run_locale_guard
 from bluewater.repository import Repository
+from bluewater.versioning import satisfies
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,11 @@ def _enabled(config: BluewaterConfig, name: str, default: bool = True) -> bool:
     return config.checks.get(name, default)
 
 
+def check_version(config: BluewaterConfig) -> CheckResult:
+    ok, detail = satisfies(config.required_version)
+    return CheckResult("bluewater-version", ok, detail)
+
+
 def check_structured_files(repo: Repository, config: BluewaterConfig) -> CheckResult:
     if not _enabled(config, "structured_files"):
         return CheckResult("structured-files", True, "disabled")
@@ -30,12 +36,44 @@ def check_structured_files(repo: Repository, config: BluewaterConfig) -> CheckRe
         for path in repo.root.rglob("*.json"):
             if ".git" not in path.parts:
                 json.loads(path.read_text(encoding="utf-8"))
-        for path in list(repo.root.rglob("*.yml")) + list(repo.root.rglob("*.yaml")):
+        yaml_paths = [*repo.root.rglob("*.yml"), *repo.root.rglob("*.yaml")]
+        for path in yaml_paths:
             if ".git" not in path.parts:
                 yaml.safe_load(path.read_text(encoding="utf-8"))
     except (ValueError, OSError, yaml.YAMLError) as exc:
         return CheckResult("structured-files", False, str(exc))
     return CheckResult("structured-files", True, "JSON/YAML syntax valid")
+
+
+def check_markdown(repo: Repository, config: BluewaterConfig) -> CheckResult:
+    if not _enabled(config, "markdown"):
+        return CheckResult("markdown", True, "disabled")
+    problems: list[str] = []
+    for path in repo.root.rglob("*.md"):
+        if ".git" in path.parts or "tools" in path.parts:
+            continue
+        text = path.read_text(encoding="utf-8")
+        if text and not text.startswith("#"):
+            problems.append(f"{path.relative_to(repo.root)}: missing leading heading")
+        if "\t" in text:
+            problems.append(f"{path.relative_to(repo.root)}: tab character found")
+    if problems:
+        return CheckResult("markdown", False, "; ".join(problems))
+    return CheckResult("markdown", True, "Markdown baseline valid")
+
+
+def check_python_syntax(repo: Repository, config: BluewaterConfig) -> CheckResult:
+    if repo.profile not in {"python", "mixed"} or not _enabled(config, "python_syntax"):
+        return CheckResult("python-syntax", True, "not applicable or disabled")
+    proc = subprocess.run(
+        ["python", "-m", "compileall", "-q", "src", "tests"],
+        cwd=repo.root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    detail = proc.stderr.strip() or "Python syntax valid"
+    return CheckResult("python-syntax", proc.returncode == 0, detail)
 
 
 def check_locale_guard(repo: Repository, config: BluewaterConfig) -> CheckResult:
@@ -64,9 +102,12 @@ def check_git_clean_generated(repo: Repository, config: BluewaterConfig) -> Chec
 
 
 def run_checks(repo: Repository, config: BluewaterConfig, scope: str = "all") -> list[CheckResult]:
-    _ = scope  # reserved for changed-file optimization; contract is stable from v1
+    _ = scope
     return [
+        check_version(config),
         check_structured_files(repo, config),
+        check_markdown(repo, config),
+        check_python_syntax(repo, config),
         check_locale_guard(repo, config),
         check_git_clean_generated(repo, config),
     ]

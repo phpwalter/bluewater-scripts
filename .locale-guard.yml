@@ -33,6 +33,11 @@ output:
 readme:
   enabled: true
   path: README.md
+  display:
+    flags: true
+    counts: true
+    percentages: true
+    progress_bar: true
 
 navigation:
-  enabled: true
+  enabled: false

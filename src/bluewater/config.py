@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from importlib.resources import files
 from pathlib import Path
+from typing import cast
 
 import yaml
 from jsonschema import Draft202012Validator
@@ -28,8 +30,9 @@ class BluewaterConfig:
     checks: dict[str, bool] = field(default_factory=dict)
 
 
-def _schema_path() -> Path:
-    return Path(__file__).resolve().parents[2] / "schemas" / "bluewater.schema.json"
+def _schema() -> dict[str, object]:
+    resource = files("bluewater").joinpath("bluewater.schema.json")
+    return cast(dict[str, object], json.loads(resource.read_text(encoding="utf-8")))
 
 
 def load_config(root: Path) -> BluewaterConfig:
@@ -40,8 +43,7 @@ def load_config(root: Path) -> BluewaterConfig:
     if not isinstance(data, dict):
         raise ConfigurationError("bluewater.yml must contain a YAML mapping")
 
-    schema = json.loads(_schema_path().read_text(encoding="utf-8"))
-    errors = sorted(Draft202012Validator(schema).iter_errors(data), key=lambda e: list(e.path))
+    errors = sorted(Draft202012Validator(_schema()).iter_errors(data), key=lambda e: list(e.path))
     if errors:
         details = "; ".join(error.message for error in errors)
         raise ConfigurationError(f"invalid bluewater.yml: {details}")

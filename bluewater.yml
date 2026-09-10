@@ -2,10 +2,12 @@ version: 1
 
 repository:
   type: python
-  required_bluewater_version: ">=1.0,<2.0"
+  required_bluewater_version: ">=1.0.0.dev0,<2.0"
 
 checks:
   structured_files: true
+  markdown: true
+  python_syntax: true
   locale_guard: true
   generated_files: true
 
