@@ -4,10 +4,10 @@ import argparse
 from pathlib import Path
 
 from bluewater import __version__
-from bluewater.config import ConfigurationError, load_config
+from bluewater.config import BluewaterConfig, ConfigurationError, load_config
 from bluewater.hooks import install as install_hooks
 from bluewater.locale_guard import LocaleGuardError, run as run_locale_guard
-from bluewater.repository import find_root, inspect_repository
+from bluewater.repository import Repository, find_root, inspect_repository
 from bluewater.validation import run_checks
 
 
@@ -26,7 +26,7 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _context() -> tuple[Path, object, object]:
+def _context() -> tuple[Path, BluewaterConfig, Repository]:
     root = find_root()
     config = load_config(root)
     repo = inspect_repository(root, config.repository_type)
