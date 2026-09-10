@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import subprocess
 from dataclasses import dataclass
-from pathlib import Path
 
 import yaml
 
@@ -97,8 +96,10 @@ def check_git_clean_generated(repo: Repository, config: BluewaterConfig) -> Chec
         check=False,
     )
     if proc.returncode != 0:
-        return CheckResult("generated-files", False, proc.stderr.strip() or "git status failed")
-    return CheckResult("generated-files", not bool(proc.stdout.strip()), proc.stdout.strip() or "clean")
+        detail = proc.stderr.strip() or "git status failed"
+        return CheckResult("generated-files", False, detail)
+    detail = proc.stdout.strip() or "clean"
+    return CheckResult("generated-files", not bool(proc.stdout.strip()), detail)
 
 
 def run_checks(repo: Repository, config: BluewaterConfig, scope: str = "all") -> list[CheckResult]:

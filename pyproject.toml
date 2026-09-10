@@ -22,7 +22,7 @@ bluewater = "bluewater.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-bluewater = ["bluewater.schema.json"]
+bluewater = ["bluewater.schema.json", "hook_templates/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

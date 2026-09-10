@@ -17,10 +17,9 @@ def command(root: Path, config: LocaleGuardConfig, action: str) -> list[str]:
         raise LocaleGuardError(
             f"LocaleGuard is enabled but missing at {script}; initialize submodules first"
         )
-    return [sys.executable, "-B", str(script), action]
+    return [sys.executable, "-B", str(script), "--config", config.config, action]
 
 
 def run(root: Path, config: LocaleGuardConfig, action: str = "check") -> int:
-    env = None
     cmd = command(root, config, action)
-    return subprocess.run(cmd, cwd=root, env=env, check=False).returncode
+    return subprocess.run(cmd, cwd=root, check=False).returncode
