@@ -1,0 +1,16 @@
+version: 1
+
+repository:
+  type: python
+  required_bluewater_version: ">=1.0,<2.0"
+
+checks:
+  structured_files: true
+  locale_guard: true
+  generated_files: true
+
+integrations:
+  locale_guard:
+    enabled: true
+    path: tools/locale-guard
+    config: .locale-guard.yml
