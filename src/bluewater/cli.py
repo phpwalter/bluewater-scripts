@@ -9,7 +9,7 @@ from bluewater.hooks import install as install_hooks
 from bluewater.initialization import initialize
 from bluewater.locale_guard import LocaleGuardError, run as run_locale_guard
 from bluewater.repository import Repository, find_root, inspect_repository
-from bluewater.validation import run_checks
+from bluewater.validation import CheckResult, run_checks
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -45,15 +45,11 @@ def _context() -> tuple[Path, BluewaterConfig, Repository]:
     return root, config, repo
 
 
-def _print_results(results: list[object]) -> int:
+def _print_results(results: list[CheckResult]) -> int:
     ok = True
     for result in results:
-        result_ok = bool(getattr(result, "ok"))
-        print(
-            f"{'PASS' if result_ok else 'FAIL'} "
-            f"{getattr(result, 'name')}: {getattr(result, 'detail')}"
-        )
-        ok = ok and result_ok
+        print(f"{'PASS' if result.ok else 'FAIL'} {result.name}: {result.detail}")
+        ok = ok and result.ok
     return 0 if ok else 1
 
 
