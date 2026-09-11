@@ -44,6 +44,19 @@ def test_invalid_repository_type_fails_closed(tmp_path: Path) -> None:
         load_config(tmp_path)
 
 
+def test_empty_version_constraint_fails_closed(tmp_path: Path) -> None:
+    (tmp_path / "bluewater.yml").write_text(
+        """version: 1
+repository:
+  type: auto
+  required_bluewater_version: ""
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigurationError, match="invalid bluewater.yml"):
+        load_config(tmp_path)
+
+
 def test_non_boolean_check_value_fails_closed(tmp_path: Path) -> None:
     (tmp_path / "bluewater.yml").write_text(
         """version: 1
