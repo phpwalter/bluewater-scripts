@@ -20,24 +20,36 @@ integrations:
 
 
 def _repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    (tmp_path / ".git").mkdir()
     (tmp_path / "bluewater.yml").write_text(CONFIG, encoding="utf-8")
     (tmp_path / "docs").mkdir()
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
 
-def test_doctor_reports_profile(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_doctor_reports_actionable_checks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     _repo(tmp_path, monkeypatch)
     assert main(["doctor"]) == 0
     output = capsys.readouterr().out
-    assert "profile: documentation" in output
-    assert "LocaleGuard: disabled" in output
+    assert "PASS python-runtime" in output
+    assert "PASS git" in output
+    assert "PASS repository" in output
+    assert "PASS bluewater-version" in output
+    assert "PASS locale-guard" in output
 
 
 def test_repo_validate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     _repo(tmp_path, monkeypatch)
     assert main(["repo", "validate"]) == 0
-    assert "repository valid: documentation" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "PASS repository" in output
+    assert "PASS configuration" in output
+    assert "PASS profile" in output
+    assert "PASS bluewater-version" in output
 
 
 def test_docs_disabled_is_success(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
