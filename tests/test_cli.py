@@ -4,7 +4,6 @@ import pytest
 
 from bluewater.cli import main
 
-
 CONFIG = """version: 1
 repository:
   type: documentation
