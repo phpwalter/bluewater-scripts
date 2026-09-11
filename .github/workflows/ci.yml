@@ -32,10 +32,6 @@ jobs:
       - name: Build distribution
         run: python -m build --wheel
       - name: Verify distribution contents
-        shell: bash
-        run: |
-          wheel=$(find dist -maxdepth 1 -type f -name '*.whl' -print -quit)
-          test -n "$wheel"
-          python tools/verify_distribution.py "$wheel"
+        run: python tools/verify_distribution.py dist
       - name: Governance
         run: python -m bluewater check --scope all
