@@ -47,3 +47,17 @@ def test_inspect_repository_honors_explicit_profile(tmp_path: Path) -> None:
     repo = inspect_repository(tmp_path, "php")
     assert repo.root == tmp_path
     assert repo.profile == "php"
+
+
+def test_explicit_profile_takes_precedence_over_detected_profile(tmp_path: Path) -> None:
+    (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+    (tmp_path / "package.json").write_text("{}", encoding="utf-8")
+
+    assert detect_profile(tmp_path) == "mixed"
+    assert inspect_repository(tmp_path, "php").profile == "php"
+
+
+def test_auto_profile_defers_to_repository_detection(tmp_path: Path) -> None:
+    (tmp_path / "composer.json").write_text("{}", encoding="utf-8")
+
+    assert inspect_repository(tmp_path, "auto").profile == "php"
