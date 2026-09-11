@@ -13,12 +13,27 @@ REQUIRED_FILES = {
 }
 
 
+def resolve_wheel(path: Path) -> Path:
+    if path.is_file():
+        return path
+    if path.is_dir():
+        wheels = sorted(path.glob("*.whl"))
+        if len(wheels) == 1:
+            return wheels[0]
+        if not wheels:
+            raise ValueError(f"no wheel found in distribution directory: {path}")
+        raise ValueError(f"expected exactly one wheel in {path}, found {len(wheels)}")
+    raise ValueError(f"distribution artifact not found: {path}")
+
+
 def verify_wheel(path: Path) -> int:
-    if not path.is_file():
-        print(f"distribution artifact not found: {path}", file=sys.stderr)
+    try:
+        wheel = resolve_wheel(path)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
         return 2
 
-    with zipfile.ZipFile(path) as archive:
+    with zipfile.ZipFile(wheel) as archive:
         names = set(archive.namelist())
 
     missing = sorted(REQUIRED_FILES - names)
@@ -28,14 +43,14 @@ def verify_wheel(path: Path) -> int:
             print(f"- {name}", file=sys.stderr)
         return 1
 
-    print(f"verified distribution contents: {path.name}")
+    print(f"verified distribution contents: {wheel.name}")
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     args = argv if argv is not None else sys.argv[1:]
     if len(args) != 1:
-        print("usage: verify_distribution.py <wheel-path>", file=sys.stderr)
+        print("usage: verify_distribution.py <wheel-path-or-directory>", file=sys.stderr)
         return 2
     return verify_wheel(Path(args[0]))
 
