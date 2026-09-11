@@ -48,10 +48,32 @@ def test_markdown_detects_missing_heading_and_tabs(tmp_path: Path) -> None:
     assert "tab character" in result.detail
 
 
+def test_markdown_explicit_disable_takes_precedence(tmp_path: Path) -> None:
+    (tmp_path / "bad.md").write_text("plain\ttext", encoding="utf-8")
+    result = check_markdown(
+        Repository(tmp_path, "documentation"), _config(markdown=False)
+    )
+    assert result.ok
+    assert result.detail == "disabled"
+
+
 def test_python_syntax_not_applicable_to_documentation(tmp_path: Path) -> None:
     result = check_python_syntax(Repository(tmp_path, "documentation"), _config())
     assert result.ok
     assert "not applicable" in result.detail
+
+
+def test_python_syntax_explicit_disable_takes_precedence(tmp_path: Path) -> None:
+    src = tmp_path / "src"
+    tests = tmp_path / "tests"
+    src.mkdir()
+    tests.mkdir()
+    (src / "bad.py").write_text("def broken(:\n", encoding="utf-8")
+    result = check_python_syntax(
+        Repository(tmp_path, "python"), _config(python_syntax=False)
+    )
+    assert result.ok
+    assert "disabled" in result.detail
 
 
 def test_python_syntax_detects_compile_failure(tmp_path: Path) -> None:
@@ -68,6 +90,16 @@ def test_php_syntax_not_applicable_to_python(tmp_path: Path) -> None:
     result = check_php_syntax(Repository(tmp_path, "python"), _config())
     assert result.ok
     assert "not applicable" in result.detail
+
+
+def test_php_explicit_disable_takes_precedence_over_profile(tmp_path: Path) -> None:
+    path = tmp_path / "index.php"
+    path.write_text("<?php broken", encoding="utf-8")
+    result = check_php_syntax(
+        Repository(tmp_path, "php"), _config(php_syntax=False), [path]
+    )
+    assert result.ok
+    assert "disabled" in result.detail
 
 
 def test_php_changed_scope_without_php_files_is_success(tmp_path: Path) -> None:
@@ -123,6 +155,16 @@ def test_javascript_changed_scope_without_js_files_is_success(tmp_path: Path) ->
     assert result.detail == "no changed JavaScript files"
 
 
+def test_javascript_explicit_disable_takes_precedence_over_profile(tmp_path: Path) -> None:
+    path = tmp_path / "index.js"
+    path.write_text("const = ;", encoding="utf-8")
+    result = check_javascript_syntax(
+        Repository(tmp_path, "javascript"), _config(javascript_syntax=False), [path]
+    )
+    assert result.ok
+    assert "disabled" in result.detail
+
+
 def test_javascript_syntax_requires_runtime(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -170,9 +212,59 @@ def test_locale_guard_disabled(tmp_path: Path) -> None:
     assert result.detail == "disabled"
 
 
+def test_locale_guard_check_switch_disables_delegation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    called = False
+
+    def fake_run(*args: object, **kwargs: object) -> int:
+        nonlocal called
+        called = True
+        return 0
+
+    monkeypatch.setattr("bluewater.validation.run_locale_guard", fake_run)
+    config = BluewaterConfig(
+        version=1,
+        locale_guard=LocaleGuardConfig(enabled=True),
+        checks={"locale_guard": False},
+    )
+    result = check_locale_guard(Repository(tmp_path, "documentation"), config)
+    assert result.ok
+    assert result.detail == "disabled"
+    assert not called
+
+
+def test_locale_guard_enabled_delegates_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[tuple[Path, str]] = []
+
+    def fake_run(root: Path, config: LocaleGuardConfig, action: str) -> int:
+        calls.append((root, action))
+        return 0
+
+    monkeypatch.setattr("bluewater.validation.run_locale_guard", fake_run)
+    config = BluewaterConfig(
+        version=1,
+        locale_guard=LocaleGuardConfig(enabled=True),
+        checks={"locale_guard": True},
+    )
+    result = check_locale_guard(Repository(tmp_path, "documentation"), config)
+    assert result.ok
+    assert calls == [(tmp_path, "check")]
+
+
 def test_generated_files_reports_non_git_directory(tmp_path: Path) -> None:
     result = check_git_clean_generated(Repository(tmp_path, "documentation"), _config())
     assert not result.ok
+
+
+def test_generated_files_explicit_disable_takes_precedence(tmp_path: Path) -> None:
+    result = check_git_clean_generated(
+        Repository(tmp_path, "documentation"), _config(generated_files=False)
+    )
+    assert result.ok
+    assert result.detail == "disabled"
 
 
 def test_changed_scope_validates_untracked_files(tmp_path: Path) -> None:
