@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -22,4 +23,7 @@ def command(root: Path, config: LocaleGuardConfig, action: str) -> list[str]:
 
 def run(root: Path, config: LocaleGuardConfig, action: str = "check") -> int:
     cmd = command(root, config, action)
-    return subprocess.run(cmd, cwd=root, check=False).returncode
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    return subprocess.run(cmd, cwd=root, check=False, env=env).returncode
