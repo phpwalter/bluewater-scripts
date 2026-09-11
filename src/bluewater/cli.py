@@ -5,6 +5,7 @@ from pathlib import Path
 
 from bluewater import __version__
 from bluewater.config import BluewaterConfig, ConfigurationError, load_config
+from bluewater.diagnostics import doctor_checks, repository_checks
 from bluewater.hooks import install as install_hooks
 from bluewater.initialization import initialize
 from bluewater.locale_guard import LocaleGuardError
@@ -64,13 +65,9 @@ def main(argv: list[str] | None = None) -> int:
 
         root, config, repo = _context()
         if args.command == "doctor":
-            print(f"root: {root}")
-            print(f"profile: {repo.profile}")
-            print(f"LocaleGuard: {'enabled' if config.locale_guard.enabled else 'disabled'}")
-            return 0
+            return _print_results(doctor_checks(repo, config))
         if args.command == "repo":
-            print(f"repository valid: {repo.profile}")
-            return 0
+            return _print_results(repository_checks(repo, config))
         if args.command == "hooks":
             install_hooks(root)
             print("Git hooks installed")
