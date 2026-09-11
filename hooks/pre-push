@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-set -eu
-exec python -m bluewater check --scope all
