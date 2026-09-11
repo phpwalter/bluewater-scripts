@@ -3,7 +3,6 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
-from pathlib import Path
 
 from bluewater.config import BluewaterConfig
 from bluewater.repository import Repository
