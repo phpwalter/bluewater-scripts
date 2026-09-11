@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -70,6 +71,15 @@ def test_locale_guard_disabled(tmp_path: Path) -> None:
 def test_generated_files_reports_non_git_directory(tmp_path: Path) -> None:
     result = check_git_clean_generated(Repository(tmp_path, "documentation"), _config())
     assert not result.ok
+
+
+def test_changed_scope_validates_untracked_files(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    (tmp_path / "bad.json").write_text("{", encoding="utf-8")
+    config = _config(markdown=False, generated_files=False)
+    results = run_checks(Repository(tmp_path, "documentation"), config, "changed")
+    structured = next(result for result in results if result.name == "structured-files")
+    assert not structured.ok
 
 
 def test_run_checks_rejects_unknown_scope(tmp_path: Path) -> None:
