@@ -13,7 +13,12 @@
       "required": ["type"],
       "properties": {
         "type": {"enum": ["auto", "python", "php", "javascript", "documentation", "mixed"]},
-        "required_bluewater_version": {"type": ["string", "null"]}
+        "required_bluewater_version": {
+          "anyOf": [
+            {"type": "string", "minLength": 1},
+            {"type": "null"}
+          ]
+        }
       }
     },
     "checks": {
