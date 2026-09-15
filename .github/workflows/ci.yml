@@ -29,8 +29,10 @@ jobs:
         run: python -m mypy src/bluewater
       - name: Tests
         run: python -m pytest --cov=bluewater --cov-report=term-missing
-      - name: Build distribution
-        run: python -m build --wheel
+      - name: Build distributions
+        run: python -m build
+      - name: Verify package metadata
+        run: python -m twine check dist/*
       - name: Verify distribution contents
         run: python tools/verify_distribution.py dist
       - name: Verify installed distribution
