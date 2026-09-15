@@ -15,6 +15,22 @@ from bluewater.locale_guard import run as run_locale_guard
 from bluewater.repository import Repository
 from bluewater.versioning import satisfies
 
+EXCLUDED_DIRS = frozenset(
+    {
+        ".git",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".venv",
+        "build",
+        "dist",
+        "htmlcov",
+        "node_modules",
+        "vendor",
+        "venv",
+    }
+)
+
 
 @dataclass(frozen=True)
 class CheckResult:
@@ -51,16 +67,25 @@ def _changed_files(repo: Repository) -> list[Path]:
     )
 
 
+def _is_excluded(repo: Repository, path: Path) -> bool:
+    relative = path.relative_to(repo.root)
+    return any(part in EXCLUDED_DIRS for part in relative.parts[:-1])
+
+
 def _paths(repo: Repository, suffixes: tuple[str, ...], changed: list[Path] | None) -> list[Path]:
     if changed is not None:
         return [
             path
             for path in changed
-            if path.suffix.lower() in suffixes and ".git" not in path.parts
+            if path.suffix.lower() in suffixes and not _is_excluded(repo, path)
         ]
     paths: list[Path] = []
     for suffix in suffixes:
-        paths.extend(path for path in repo.root.rglob(f"*{suffix}") if ".git" not in path.parts)
+        paths.extend(
+            path
+            for path in repo.root.rglob(f"*{suffix}")
+            if not _is_excluded(repo, path)
+        )
     return sorted(set(paths), key=lambda path: path.as_posix())
 
 
