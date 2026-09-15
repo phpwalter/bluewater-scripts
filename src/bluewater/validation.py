@@ -27,24 +27,28 @@ def _enabled(config: BluewaterConfig, name: str, default: bool = True) -> bool:
     return config.checks.get(name, default)
 
 
+def _git_paths(repo: Repository, command: list[str]) -> set[str]:
+    proc = subprocess.run(
+        command,
+        cwd=repo.root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip() or f"failed to determine changed files: {command}")
+    return {name for name in proc.stdout.split("\0") if name}
+
+
 def _changed_files(repo: Repository) -> list[Path]:
     commands = (
-        ["git", "diff", "--name-only", "--cached"],
-        ["git", "diff", "--name-only"],
-        ["git", "ls-files", "--others", "--exclude-standard"],
+        ["git", "diff", "--name-only", "-z", "--cached", "--diff-filter=ACMRTUXB"],
+        ["git", "diff", "--name-only", "-z", "--diff-filter=ACMRTUXB"],
+        ["git", "ls-files", "-z", "--others", "--exclude-standard"],
     )
     names: set[str] = set()
     for command in commands:
-        proc = subprocess.run(
-            command,
-            cwd=repo.root,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if proc.returncode != 0:
-            raise RuntimeError(proc.stderr.strip() or f"failed to determine changed files: {command}")
-        names.update(line.strip() for line in proc.stdout.splitlines() if line.strip())
+        names.update(_git_paths(repo, command))
     return sorted(
         (repo.root / name for name in names if (repo.root / name).is_file()),
         key=lambda path: path.as_posix(),
