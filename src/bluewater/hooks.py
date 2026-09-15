@@ -16,6 +16,10 @@ class HookStatus:
 
 
 def hooks_directory(root: Path) -> Path:
+    direct = root / ".git" / "hooks"
+    if direct.is_dir():
+        return direct.resolve()
+
     proc = subprocess.run(
         ["git", "rev-parse", "--git-path", "hooks"],
         cwd=root,
@@ -24,7 +28,7 @@ def hooks_directory(root: Path) -> Path:
         check=False,
     )
     if proc.returncode != 0:
-        raise RuntimeError("hooks can only be managed in a Git worktree")
+        raise RuntimeError(".git/hooks not found; hooks can only be managed in a Git worktree")
     path = Path(proc.stdout.strip())
     if not path.is_absolute():
         path = root / path
