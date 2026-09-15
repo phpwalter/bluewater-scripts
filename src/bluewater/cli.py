@@ -48,6 +48,11 @@ def _parser() -> argparse.ArgumentParser:
 
     repo = sub.add_parser("repo", help="repository operations")
     repo.add_argument("action", choices=("validate",))
+    repo.add_argument(
+        "--extended",
+        action="store_true",
+        help="validate operational repository integrations",
+    )
     _add_format_argument(repo)
 
     ci = sub.add_parser("ci", help="CI operations")
@@ -106,7 +111,10 @@ def main(argv: list[str] | None = None) -> int:
                 args.format,
             )
         if args.command == "repo":
-            return _print_results(repository_checks(repo, config), args.format)
+            return _print_results(
+                repository_checks(repo, config, extended=args.extended),
+                args.format,
+            )
         if args.command == "hooks":
             if args.action == "install":
                 install_hooks(root, force=args.force)
