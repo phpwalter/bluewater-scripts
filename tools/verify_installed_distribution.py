@@ -45,6 +45,11 @@ def _run(command: list[str], *, cwd: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _expected_version() -> str:
+    root = Path(__file__).resolve().parents[1]
+    return (root / "VERSION").read_text(encoding="utf-8").strip()
+
+
 def verify_installed_distribution(path: Path) -> int:
     try:
         wheel = _wheel_from(path)
@@ -52,6 +57,7 @@ def verify_installed_distribution(path: Path) -> int:
         print(str(exc), file=sys.stderr)
         return 2
 
+    expected_version = _expected_version()
     with tempfile.TemporaryDirectory(prefix="bluewater-wheel-") as temp:
         temp_root = Path(temp)
         env_root = temp_root / "venv"
@@ -65,9 +71,10 @@ def verify_installed_distribution(path: Path) -> int:
         _run([str(python), "-m", "pip", "install", str(wheel)], cwd=work_root)
 
         version = _run([str(bluewater), "--version"], cwd=work_root)
-        if "1.0.0.dev0" not in version.stdout:
+        if version.stdout.strip() != expected_version:
             print(
-                f"installed CLI reported unexpected version: {version.stdout.strip()}",
+                "installed CLI reported unexpected version: "
+                f"{version.stdout.strip()} (expected {expected_version})",
                 file=sys.stderr,
             )
             return 1
