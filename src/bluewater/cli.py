@@ -14,6 +14,8 @@ from bluewater.locale_guard import run as run_locale_guard
 from bluewater.repository import Repository, find_root, inspect_repository
 from bluewater.validation import CheckResult, run_checks
 
+FORMAT_VERSION = 1
+
 
 def _add_format_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--format", choices=("text", "json"), default="text")
@@ -57,22 +59,32 @@ def _context() -> tuple[Path, BluewaterConfig, Repository]:
     return root, config, repo
 
 
+def _emit_json(payload: dict[str, object]) -> None:
+    print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+
+
 def _print_results(results: list[CheckResult], output_format: str = "text") -> int:
     ok = all(result.ok for result in results)
     if output_format == "json":
-        payload = {
-            "ok": ok,
-            "checks": [
-                {"name": result.name, "ok": result.ok, "detail": result.detail}
-                for result in results
-            ],
-        }
-        print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+        _emit_json(
+            {
+                "format_version": FORMAT_VERSION,
+                "ok": ok,
+                "checks": [
+                    {"name": result.name, "ok": result.ok, "detail": result.detail}
+                    for result in results
+                ],
+            }
+        )
         return 0 if ok else 1
 
     for result in results:
         print(f"{'PASS' if result.ok else 'FAIL'} {result.name}: {result.detail}")
     return 0 if ok else 1
+
+
+def _requested_format(args: argparse.Namespace) -> str:
+    return str(getattr(args, "format", "text"))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -103,6 +115,15 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "check":
             return _print_results(run_checks(repo, config, args.scope), args.format)
     except (ConfigurationError, LocaleGuardError, RuntimeError) as exc:
-        print(f"ERROR: {exc}")
+        if _requested_format(args) == "json":
+            _emit_json(
+                {
+                    "format_version": FORMAT_VERSION,
+                    "ok": False,
+                    "error": {"kind": "execution", "detail": str(exc)},
+                }
+            )
+        else:
+            print(f"ERROR: {exc}")
         return 2
     return 2
