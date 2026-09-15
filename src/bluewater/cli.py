@@ -26,9 +26,7 @@ def _parser() -> argparse.ArgumentParser:
 
     init = sub.add_parser("init", help="create a project-owned bluewater.yml")
     init.add_argument("--force", action="store_true")
-
-    doctor = sub.add_parser("doctor", help="inspect repository and dependencies")
-    _add_format_argument(doctor)
+    sub.add_parser("doctor", help="inspect repository and dependencies")
 
     check = sub.add_parser("check", help="run deterministic governance checks")
     check.add_argument("--scope", choices=("changed", "all"), default="all")
@@ -42,6 +40,7 @@ def _parser() -> argparse.ArgumentParser:
 
     repo = sub.add_parser("repo", help="repository operations")
     repo.add_argument("action", choices=("validate",))
+    repo.add_argument("--extended", action="store_true", help="validate operational repository integrations")
     _add_format_argument(repo)
 
     ci = sub.add_parser("ci", help="CI operations")
@@ -85,9 +84,12 @@ def main(argv: list[str] | None = None) -> int:
 
         root, config, repo = _context()
         if args.command == "doctor":
-            return _print_results(doctor_checks(repo, config), args.format)
+            return _print_results(doctor_checks(repo, config))
         if args.command == "repo":
-            return _print_results(repository_checks(repo, config), args.format)
+            return _print_results(
+                repository_checks(repo, config, extended=args.extended),
+                args.format,
+            )
         if args.command == "hooks":
             install_hooks(root)
             print("Git hooks installed")
