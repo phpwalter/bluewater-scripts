@@ -8,6 +8,8 @@ from bluewater import __version__
 from bluewater.config import BluewaterConfig, ConfigurationError, load_config
 from bluewater.diagnostics import doctor_checks, repository_checks
 from bluewater.hooks import install as install_hooks
+from bluewater.hooks import status as hook_status
+from bluewater.hooks import uninstall as uninstall_hooks
 from bluewater.initialization import initialize
 from bluewater.locale_guard import LocaleGuardError
 from bluewater.locale_guard import run as run_locale_guard
@@ -37,7 +39,8 @@ def _parser() -> argparse.ArgumentParser:
     _add_format_argument(check)
 
     hooks = sub.add_parser("hooks", help="manage Git hooks")
-    hooks.add_argument("action", choices=("install",))
+    hooks.add_argument("action", choices=("install", "status", "uninstall"))
+    hooks.add_argument("--force", action="store_true", help="replace custom hooks during install")
 
     docs = sub.add_parser("docs", help="delegate documentation localization governance")
     docs.add_argument("action", choices=("check", "update", "scan", "validate"), default="check")
@@ -101,8 +104,16 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "repo":
             return _print_results(repository_checks(repo, config), args.format)
         if args.command == "hooks":
-            install_hooks(root)
-            print("Git hooks installed")
+            if args.action == "install":
+                install_hooks(root, force=args.force)
+                print("Git hooks installed")
+                return 0
+            if args.action == "uninstall":
+                uninstall_hooks(root)
+                print("Bluewater Git hooks uninstalled")
+                return 0
+            for item in hook_status(root):
+                print(f"{item.name}: {item.state}")
             return 0
         if args.command == "docs":
             if not config.locale_guard.enabled:
