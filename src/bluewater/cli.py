@@ -32,6 +32,7 @@ def _parser() -> argparse.ArgumentParser:
     init.add_argument("--force", action="store_true")
 
     doctor = sub.add_parser("doctor", help="inspect repository and dependencies")
+    doctor.add_argument("--extended", action="store_true", help="include operational diagnostics")
     _add_format_argument(doctor)
 
     check = sub.add_parser("check", help="run deterministic governance checks")
@@ -100,7 +101,10 @@ def main(argv: list[str] | None = None) -> int:
 
         root, config, repo = _context()
         if args.command == "doctor":
-            return _print_results(doctor_checks(repo, config), args.format)
+            return _print_results(
+                doctor_checks(repo, config, extended=args.extended),
+                args.format,
+            )
         if args.command == "repo":
             return _print_results(repository_checks(repo, config), args.format)
         if args.command == "hooks":
