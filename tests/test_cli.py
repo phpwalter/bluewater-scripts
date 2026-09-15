@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -58,6 +59,28 @@ def test_doctor_reports_actionable_checks(
     assert "PASS locale-guard" in output
 
 
+def test_doctor_json_output_is_structured_and_stable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _repo(tmp_path, monkeypatch)
+    assert main(["doctor", "--format", "json"]) == 0
+    raw = capsys.readouterr().out.strip()
+    payload = json.loads(raw)
+    assert payload["ok"] is True
+    assert [check["name"] for check in payload["checks"]] == [
+        "python-runtime",
+        "git",
+        "repository",
+        "configuration",
+        "profile",
+        "bluewater-version",
+        "locale-guard",
+    ]
+    assert raw == json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
 def test_repo_validate(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -70,6 +93,22 @@ def test_repo_validate(
     assert "PASS configuration" in output
     assert "PASS profile" in output
     assert "PASS bluewater-version" in output
+
+
+def test_repo_validate_json_output_preserves_order(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _repo(tmp_path, monkeypatch)
+    assert main(["repo", "validate", "--format", "json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert [check["name"] for check in payload["checks"]] == [
+        "repository",
+        "configuration",
+        "profile",
+        "bluewater-version",
+    ]
 
 
 def test_docs_disabled_is_success(
@@ -90,6 +129,28 @@ def test_check_reports_passes(
     _repo(tmp_path, monkeypatch)
     assert main(["check", "--scope", "all"]) == 0
     assert "PASS bluewater-version" in capsys.readouterr().out
+
+
+def test_check_json_output_has_stable_validation_order(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _repo(tmp_path, monkeypatch)
+    assert main(["check", "--scope", "all", "--format", "json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    names = [check["name"] for check in payload["checks"]]
+    assert names == [
+        "bluewater-version",
+        "structured-files",
+        "markdown",
+        "python-syntax",
+        "php-syntax",
+        "javascript-syntax",
+        "locale-guard",
+        "generated-files",
+    ]
+    assert len(names) == len(set(names))
 
 
 def test_missing_configuration_returns_usage_error(
@@ -128,6 +189,22 @@ def test_doctor_without_git_metadata_returns_validation_failure(
     output = capsys.readouterr().out
     assert "FAIL repository" in output
     assert "missing Git metadata" in output
+
+
+def test_json_validation_failure_returns_one_and_reports_ok_false(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    (tmp_path / "bluewater.yml").write_text(CONFIG, encoding="utf-8")
+    (tmp_path / "docs").mkdir()
+    monkeypatch.chdir(tmp_path)
+    assert main(["repo", "validate", "--format", "json"]) == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ok"] is False
+    repository = next(check for check in payload["checks"] if check["name"] == "repository")
+    assert repository["ok"] is False
+    assert "missing Git metadata" in repository["detail"]
 
 
 def test_repo_validate_without_git_metadata_returns_validation_failure(
@@ -222,6 +299,18 @@ def test_ci_validate_uses_all_scope(
     _repo(tmp_path, monkeypatch)
     assert main(["ci", "validate"]) == 0
     assert "PASS bluewater-version" in capsys.readouterr().out
+
+
+def test_ci_validate_json_uses_same_contract(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _repo(tmp_path, monkeypatch)
+    assert main(["ci", "validate", "--format", "json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ok"] is True
+    assert payload["checks"][0]["name"] == "bluewater-version"
 
 
 def test_printed_failure_returns_one(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
