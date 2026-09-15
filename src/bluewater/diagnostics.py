@@ -133,16 +133,31 @@ def _locale_guard_revision(repo: Repository, config: BluewaterConfig) -> CheckRe
         check=False,
     )
     detail = proc.stdout.strip() or proc.stderr.strip() or "submodule status unavailable"
-    return CheckResult("locale-guard-revision", proc.returncode == 0 and bool(proc.stdout.strip()), detail)
+    ok = proc.returncode == 0 and bool(proc.stdout.strip()) and not proc.stdout.startswith("-")
+    return CheckResult("locale-guard-revision", ok, detail)
 
 
-def repository_checks(repo: Repository, config: BluewaterConfig) -> list[CheckResult]:
-    return [
+def repository_checks(
+    repo: Repository,
+    config: BluewaterConfig,
+    *,
+    extended: bool = False,
+) -> list[CheckResult]:
+    results = [
         _repository_metadata(repo),
         _configuration(repo),
         _profile(repo),
         check_version(config),
     ]
+    if extended:
+        results.extend(
+            [
+                _hook_state(repo),
+                _locale_guard(repo, config),
+                _locale_guard_revision(repo, config),
+            ]
+        )
+    return results
 
 
 def doctor_checks(
