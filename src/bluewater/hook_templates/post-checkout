@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+set -eu
+
+if command -v bluewater >/dev/null 2>&1; then
+    bluewater doctor >/dev/null 2>&1 || true
+    exit 0
+fi
+if command -v python >/dev/null 2>&1; then
+    python -m bluewater doctor >/dev/null 2>&1 || true
+    exit 0
+fi
+if command -v python3 >/dev/null 2>&1; then
+    python3 -m bluewater doctor >/dev/null 2>&1 || true
+fi
+
+exit 0

@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+set -eu
+
+if command -v bluewater >/dev/null 2>&1; then
+    exec bluewater check --scope all
+fi
+if command -v python >/dev/null 2>&1; then
+    exec python -m bluewater check --scope all
+fi
+if command -v python3 >/dev/null 2>&1; then
+    exec python3 -m bluewater check --scope all
+fi
+
+echo "Bluewater is not available on PATH; activate the environment where bluewater-scripts is installed" >&2
+exit 127

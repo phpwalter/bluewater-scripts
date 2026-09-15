@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, foundation]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.12', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: Ruff
+        run: python -m ruff check src tests tools/verify_distribution.py tools/verify_installed_distribution.py
+      - name: Mypy
+        run: python -m mypy src/bluewater
+      - name: Tests
+        run: python -m pytest --cov=bluewater --cov-report=term-missing
+      - name: Build distribution
+        run: python -m build --wheel
+      - name: Verify distribution contents
+        run: python tools/verify_distribution.py dist
+      - name: Verify installed distribution
+        run: python tools/verify_installed_distribution.py dist
+      - name: Governance
+        run: python -m bluewater check --scope all

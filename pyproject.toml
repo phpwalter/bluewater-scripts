@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bluewater-scripts"
+version = "1.0.0.dev0"
+description = "Deterministic repository automation and governance for the Bluewater ecosystem"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [{name = "Walter Torres"}]
+dependencies = ["PyYAML>=6.0.2", "jsonschema>=4.23", "packaging>=24.2"]
+
+[project.optional-dependencies]
+dev = ["build>=1.2", "pytest>=8.3", "pytest-cov>=6.0", "ruff>=0.8", "mypy>=1.13", "types-PyYAML>=6.0", "types-jsonschema>=4.23"]
+
+[project.scripts]
+bluewater = "bluewater.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+bluewater = ["bluewater.schema.json", "hook_templates/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["bluewater"]
