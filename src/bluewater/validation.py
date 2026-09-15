@@ -4,6 +4,7 @@ import json
 import shutil
 import subprocess
 import sys
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -85,9 +86,11 @@ def check_structured_files(
             json.loads(path.read_text(encoding="utf-8"))
         for path in _paths(repo, (".yml", ".yaml"), changed):
             yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (ValueError, OSError, yaml.YAMLError) as exc:
+        for path in _paths(repo, (".toml",), changed):
+            tomllib.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, OSError, yaml.YAMLError, tomllib.TOMLDecodeError) as exc:
         return CheckResult("structured-files", False, str(exc))
-    return CheckResult("structured-files", True, "JSON/YAML syntax valid")
+    return CheckResult("structured-files", True, "JSON/YAML/TOML syntax valid")
 
 
 def check_markdown(
