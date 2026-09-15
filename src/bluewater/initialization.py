@@ -13,6 +13,9 @@ repository:
 checks:
   structured_files: true
   markdown: true
+  python_syntax: true
+  php_syntax: true
+  javascript_syntax: true
   locale_guard: true
   generated_files: true
 
