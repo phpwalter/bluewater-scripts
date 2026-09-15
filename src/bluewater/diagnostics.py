@@ -5,6 +5,7 @@ import subprocess
 import sys
 
 from bluewater.config import BluewaterConfig
+from bluewater.hooks import HOOKS
 from bluewater.repository import Repository
 from bluewater.validation import CheckResult, check_version
 
@@ -87,13 +88,50 @@ def _locale_guard(repo: Repository, config: BluewaterConfig) -> CheckResult:
     return CheckResult("locale-guard", True, f"{script} using {cfg}")
 
 
-def repository_checks(repo: Repository, config: BluewaterConfig) -> list[CheckResult]:
-    return [
+def _hook_installation(repo: Repository) -> CheckResult:
+    hooks_dir = repo.root / ".git" / "hooks"
+    missing = [name for name in HOOKS if not (hooks_dir / name).is_file()]
+    if missing:
+        return CheckResult("hooks", False, f"missing Bluewater hook paths: {', '.join(missing)}")
+    return CheckResult("hooks", True, f"installed: {', '.join(HOOKS)}")
+
+
+def _locale_guard_submodule(repo: Repository, config: BluewaterConfig) -> CheckResult:
+    if not config.locale_guard.enabled:
+        return CheckResult("locale-guard-submodule", True, "disabled")
+    proc = subprocess.run(
+        ["git", "submodule", "status", "--", config.locale_guard.path],
+        cwd=repo.root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    detail = proc.stdout.strip() or proc.stderr.strip() or "submodule not registered"
+    ok = proc.returncode == 0 and bool(proc.stdout.strip()) and not proc.stdout.startswith("-")
+    return CheckResult("locale-guard-submodule", ok, detail)
+
+
+def repository_checks(
+    repo: Repository,
+    config: BluewaterConfig,
+    *,
+    extended: bool = False,
+) -> list[CheckResult]:
+    results = [
         _repository_metadata(repo),
         _configuration(repo),
         _profile(repo),
         check_version(config),
     ]
+    if extended:
+        results.extend(
+            [
+                _hook_installation(repo),
+                _locale_guard(repo, config),
+                _locale_guard_submodule(repo, config),
+            ]
+        )
+    return results
 
 
 def doctor_checks(repo: Repository, config: BluewaterConfig) -> list[CheckResult]:
