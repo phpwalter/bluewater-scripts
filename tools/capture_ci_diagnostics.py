@@ -6,7 +6,15 @@ import sys
 from pathlib import Path
 
 
+def _configure_utf8_console() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
+
 def main() -> int:
+    _configure_utf8_console()
     root = Path(__file__).resolve().parents[1]
     destination = root / "bluewater-diagnostics.json"
     proc = subprocess.run(
