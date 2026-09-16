@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/phpwalter/bluewater-scripts/schemas/bluewater.schema.json",
+  "title": "Bluewater Scripts configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "repository"],
+  "properties": {
+    "version": {"const": 1},
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {"enum": ["auto", "python", "php", "javascript", "documentation", "mixed"]},
+        "required_bluewater_version": {
+          "anyOf": [
+            {"type": "string", "minLength": 1},
+            {"type": "null"}
+          ]
+        }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "structured_files": {"type": "boolean"},
+        "markdown": {"type": "boolean"},
+        "python_syntax": {"type": "boolean"},
+        "php_syntax": {"type": "boolean"},
+        "javascript_syntax": {"type": "boolean"},
+        "locale_guard": {"type": "boolean"},
+        "generated_files": {"type": "boolean"}
+      }
+    },
+    "integrations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "locale_guard": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "path": {"type": "string", "minLength": 1},
+            "config": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    }
+  }
+}
