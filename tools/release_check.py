@@ -5,6 +5,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+OWNED_TOOL_PATHS = (
+    "tools/verify_distribution.py",
+    "tools/verify_installed_distribution.py",
+    "tools/benchmark_validation.py",
+    "tools/release_check.py",
+)
+
 
 def _run(root: Path, *command: str) -> None:
     print("+", " ".join(command), flush=True)
@@ -23,15 +30,32 @@ def main() -> int:
     python = sys.executable
     _clean_dist(root)
 
-    _run(root, python, "-m", "ruff", "check", "src", "tests", "tools")
-    _run(root, python, "-m", "mypy", "src/bluewater")
-    _run(root, python, "-m", "pytest", "--cov=bluewater", "--cov-report=term-missing")
+    _run(root, python, "-m", "ruff", "check", "src", "tests", *OWNED_TOOL_PATHS)
+    _run(
+        root,
+        python,
+        "-m",
+        "mypy",
+        "src/bluewater",
+        "tools/verify_distribution.py",
+        "tools/verify_installed_distribution.py",
+    )
+    _run(
+        root,
+        python,
+        "-m",
+        "pytest",
+        "--cov=bluewater",
+        "--cov-branch",
+        "--cov-report=term-missing",
+    )
     _run(root, python, "-m", "bluewater", "doctor")
     _run(root, python, "-m", "bluewater", "repo", "validate")
     _run(root, python, "-m", "bluewater", "check", "--scope", "all")
     _run(root, python, "-m", "bluewater", "ci", "validate", "--format", "json")
     _run(root, python, "-m", "bluewater", "docs", "check")
     _run(root, python, "-m", "build")
+    _run(root, python, "-m", "twine", "check", "dist/*")
     _run(root, python, "tools/verify_distribution.py", "dist")
     _run(root, python, "tools/verify_installed_distribution.py", "dist")
 
