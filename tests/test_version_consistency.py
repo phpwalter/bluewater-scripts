@@ -1,6 +1,8 @@
 import tomllib
 from pathlib import Path
 
+from packaging.version import Version
+
 from bluewater import __version__
 
 
@@ -11,5 +13,8 @@ def test_version_metadata_is_synchronized() -> None:
     assert __version__ == version_file == pyproject["project"]["version"]
 
 
-def test_development_version_remains_prerelease_until_release() -> None:
-    assert __version__.endswith(".dev0")
+def test_release_version_is_valid_and_stable() -> None:
+    version = Version(__version__)
+    assert version == Version("1.0.0")
+    assert not version.is_prerelease
+    assert not version.is_devrelease
