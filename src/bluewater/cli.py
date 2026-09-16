@@ -8,11 +8,15 @@ from bluewater import __version__
 from bluewater.config import BluewaterConfig, ConfigurationError, load_config
 from bluewater.diagnostics import doctor_checks, repository_checks
 from bluewater.hooks import install as install_hooks
+from bluewater.hooks import status as hook_status
+from bluewater.hooks import uninstall as uninstall_hooks
 from bluewater.initialization import initialize
 from bluewater.locale_guard import LocaleGuardError
 from bluewater.locale_guard import run as run_locale_guard
 from bluewater.repository import Repository, find_root, inspect_repository
 from bluewater.validation import CheckResult, run_checks
+
+FORMAT_VERSION = 1
 
 
 def _add_format_argument(parser: argparse.ArgumentParser) -> None:
@@ -28,6 +32,7 @@ def _parser() -> argparse.ArgumentParser:
     init.add_argument("--force", action="store_true")
 
     doctor = sub.add_parser("doctor", help="inspect repository and dependencies")
+    doctor.add_argument("--extended", action="store_true", help="include operational diagnostics")
     _add_format_argument(doctor)
 
     check = sub.add_parser("check", help="run deterministic governance checks")
@@ -35,13 +40,19 @@ def _parser() -> argparse.ArgumentParser:
     _add_format_argument(check)
 
     hooks = sub.add_parser("hooks", help="manage Git hooks")
-    hooks.add_argument("action", choices=("install",))
+    hooks.add_argument("action", choices=("install", "status", "uninstall"))
+    hooks.add_argument("--force", action="store_true", help="replace custom hooks during install")
 
     docs = sub.add_parser("docs", help="delegate documentation localization governance")
     docs.add_argument("action", choices=("check", "update", "scan", "validate"), default="check")
 
     repo = sub.add_parser("repo", help="repository operations")
     repo.add_argument("action", choices=("validate",))
+    repo.add_argument(
+        "--extended",
+        action="store_true",
+        help="validate operational repository integrations",
+    )
     _add_format_argument(repo)
 
     ci = sub.add_parser("ci", help="CI operations")
@@ -57,22 +68,32 @@ def _context() -> tuple[Path, BluewaterConfig, Repository]:
     return root, config, repo
 
 
+def _emit_json(payload: dict[str, object]) -> None:
+    print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+
+
 def _print_results(results: list[CheckResult], output_format: str = "text") -> int:
     ok = all(result.ok for result in results)
     if output_format == "json":
-        payload = {
-            "ok": ok,
-            "checks": [
-                {"name": result.name, "ok": result.ok, "detail": result.detail}
-                for result in results
-            ],
-        }
-        print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+        _emit_json(
+            {
+                "format_version": FORMAT_VERSION,
+                "ok": ok,
+                "checks": [
+                    {"name": result.name, "ok": result.ok, "detail": result.detail}
+                    for result in results
+                ],
+            }
+        )
         return 0 if ok else 1
 
     for result in results:
         print(f"{'PASS' if result.ok else 'FAIL'} {result.name}: {result.detail}")
     return 0 if ok else 1
+
+
+def _requested_format(args: argparse.Namespace) -> str:
+    return str(getattr(args, "format", "text"))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -85,12 +106,26 @@ def main(argv: list[str] | None = None) -> int:
 
         root, config, repo = _context()
         if args.command == "doctor":
-            return _print_results(doctor_checks(repo, config), args.format)
+            return _print_results(
+                doctor_checks(repo, config, extended=args.extended),
+                args.format,
+            )
         if args.command == "repo":
-            return _print_results(repository_checks(repo, config), args.format)
+            return _print_results(
+                repository_checks(repo, config, extended=args.extended),
+                args.format,
+            )
         if args.command == "hooks":
-            install_hooks(root)
-            print("Git hooks installed")
+            if args.action == "install":
+                install_hooks(root, force=args.force)
+                print("Git hooks installed")
+                return 0
+            if args.action == "uninstall":
+                uninstall_hooks(root)
+                print("Bluewater Git hooks uninstalled")
+                return 0
+            for item in hook_status(root):
+                print(f"{item.name}: {item.state}")
             return 0
         if args.command == "docs":
             if not config.locale_guard.enabled:
@@ -103,6 +138,15 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "check":
             return _print_results(run_checks(repo, config, args.scope), args.format)
     except (ConfigurationError, LocaleGuardError, RuntimeError) as exc:
-        print(f"ERROR: {exc}")
+        if _requested_format(args) == "json":
+            _emit_json(
+                {
+                    "format_version": FORMAT_VERSION,
+                    "ok": False,
+                    "error": {"kind": "execution", "detail": str(exc)},
+                }
+            )
+        else:
+            print(f"ERROR: {exc}")
         return 2
     return 2

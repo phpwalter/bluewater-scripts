@@ -4,16 +4,36 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bluewater-scripts"
-version = "1.0.0.dev0"
+version = "1.0.0"
 description = "Deterministic repository automation and governance for the Bluewater ecosystem"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [{name = "Walter Torres"}]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Build Tools",
+  "Topic :: Software Development :: Quality Assurance"
+]
 dependencies = ["PyYAML>=6.0.2", "jsonschema>=4.23", "packaging>=24.2"]
 
+[project.urls]
+Homepage = "https://github.com/phpwalter/bluewater-scripts"
+Repository = "https://github.com/phpwalter/bluewater-scripts.git"
+Issues = "https://github.com/phpwalter/bluewater-scripts/issues"
+Documentation = "https://github.com/phpwalter/bluewater-scripts/tree/main/docs/en"
+
 [project.optional-dependencies]
-dev = ["build>=1.2", "pytest>=8.3", "pytest-cov>=6.0", "ruff>=0.8", "mypy>=1.13", "types-PyYAML>=6.0", "types-jsonschema>=4.23"]
+dev = ["build>=1.2", "pytest>=8.3", "pytest-cov>=6.0", "ruff>=0.8", "mypy>=1.13", "types-PyYAML>=6.0", "types-jsonschema>=4.23", "twine>=6.0"]
 
 [project.scripts]
 bluewater = "bluewater.cli:main"
@@ -28,9 +48,14 @@ bluewater = ["bluewater.schema.json", "hook_templates/*"]
 testpaths = ["tests"]
 addopts = "-q"
 
+[tool.coverage.run]
+branch = true
+source = ["bluewater"]
+
 [tool.coverage.report]
 fail_under = 85
 show_missing = true
+skip_covered = false
 
 [tool.ruff]
 target-version = "py312"
@@ -42,4 +67,5 @@ select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+warn_unreachable = true
 packages = ["bluewater"]
