@@ -50,6 +50,8 @@ def _git_paths(repo: Repository, command: list[str]) -> set[str]:
         cwd=repo.root,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="surrogateescape",
         check=False,
     )
     if proc.returncode != 0:
