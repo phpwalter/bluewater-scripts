@@ -73,6 +73,10 @@ def _profile(repo: Repository) -> CheckResult:
     )
 
 
+def _relative_display(repo: Repository, path: object) -> str:
+    return str(path).replace("\\", "/").replace(str(repo.root).replace("\\", "/") + "/", "")
+
+
 def _locale_guard(repo: Repository, config: BluewaterConfig) -> CheckResult:
     if not config.locale_guard.enabled:
         return CheckResult("locale-guard", True, "disabled")
@@ -80,12 +84,16 @@ def _locale_guard(repo: Repository, config: BluewaterConfig) -> CheckResult:
     cfg = repo.root / config.locale_guard.config
     missing: list[str] = []
     if not script.is_file():
-        missing.append(str(script))
+        missing.append(_relative_display(repo, script))
     if not cfg.is_file():
-        missing.append(str(cfg))
+        missing.append(_relative_display(repo, cfg))
     if missing:
         return CheckResult("locale-guard", False, f"missing: {', '.join(missing)}")
-    return CheckResult("locale-guard", True, f"{script} using {cfg}")
+    return CheckResult(
+        "locale-guard",
+        True,
+        f"{_relative_display(repo, script)} using {_relative_display(repo, cfg)}",
+    )
 
 
 def _resolved_profile(repo: Repository) -> CheckResult:
