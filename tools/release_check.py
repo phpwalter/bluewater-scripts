@@ -55,7 +55,12 @@ def main() -> int:
     _run(root, python, "-m", "bluewater", "ci", "validate", "--format", "json")
     _run(root, python, "-m", "bluewater", "docs", "check")
     _run(root, python, "-m", "build")
-    _run(root, python, "-m", "twine", "check", "dist/*")
+
+    distributions = sorted((root / "dist").iterdir())
+    if not distributions:
+        raise RuntimeError("build produced no distribution artifacts")
+    _run(root, python, "-m", "twine", "check", *(str(path) for path in distributions))
+
     _run(root, python, "tools/verify_distribution.py", "dist")
     _run(root, python, "tools/verify_installed_distribution.py", "dist")
 
