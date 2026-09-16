@@ -122,6 +122,9 @@ assert config.locale_guard.config == ".locale-guard.yml"
 assert config.checks == {
     "structured_files": True,
     "markdown": True,
+    "python_syntax": True,
+    "php_syntax": True,
+    "javascript_syntax": True,
     "locale_guard": True,
     "generated_files": True,
 }
