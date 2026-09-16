@@ -26,8 +26,8 @@ jobs:
         run: python -m pip_audit
 
   dependency-review:
-    if: github.event_name == 'pull_request'
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
+      - name: Dependency review unavailable
+        run: echo "Enable GitHub Dependency Graph before activating dependency-review-action."
