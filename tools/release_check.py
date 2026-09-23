@@ -10,6 +10,7 @@ OWNED_TOOL_PATHS = (
     "tools/verify_installed_distribution.py",
     "tools/benchmark_validation.py",
     "tools/release_check.py",
+    "tools/capture_ci_diagnostics.py",
 )
 
 
@@ -39,6 +40,7 @@ def main() -> int:
         "src/bluewater",
         "tools/verify_distribution.py",
         "tools/verify_installed_distribution.py",
+        "tools/capture_ci_diagnostics.py",
     )
     _run(
         root,

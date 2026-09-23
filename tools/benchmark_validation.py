@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import statistics
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -10,7 +11,7 @@ from pathlib import Path
 def _run(root: Path, scope: str) -> float:
     start = time.perf_counter()
     proc = subprocess.run(
-        ["python", "-m", "bluewater", "check", "--scope", scope],
+        [sys.executable, "-m", "bluewater", "check", "--scope", scope],
         cwd=root,
         capture_output=True,
         text=True,
