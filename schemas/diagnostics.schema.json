@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/phpwalter/bluewater-scripts/schemas/diagnostics.schema.json",
+  "title": "Bluewater diagnostic output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format_version", "ok"],
+  "properties": {
+    "format_version": {"const": 1},
+    "ok": {"type": "boolean"},
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "ok", "detail"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "ok": {"type": "boolean"},
+          "detail": {"type": "string"}
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "detail"],
+      "properties": {
+        "kind": {"enum": ["execution"]},
+        "detail": {"type": "string", "minLength": 1}
+      }
+    }
+  },
+  "oneOf": [
+    {"required": ["checks"], "not": {"required": ["error"]}},
+    {"required": ["error"], "not": {"required": ["checks"]}}
+  ]
+}
